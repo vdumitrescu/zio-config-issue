@@ -20,13 +20,11 @@ object MainApp extends ZIOAppDefault:
     )
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
-    ZLayer.fromZIO {
-      for {
-        env    <- System.env("ENV").map(_.getOrElse("dev"))
-        config <- ZIO.attempt(ConfigFactory.parseResources(s"application.$env.conf"))
-        ldapUrl = config.getConfig("ldapConfig").getString("url")
-        ldapUsr = config.getConfig("ldapConfig").getString("user")
-        _      <- ZIO.log(s"Configured LDAP $ldapUsr@$ldapUrl")
-      } yield Runtime.setConfigProvider(TypesafeConfigProvider.fromTypesafeConfig(config))
-        >>> Runtime.removeDefaultLoggers >>> SLF4J.slf4j
-    }
+    ZLayer
+      .fromZIO(
+        for
+          env    <- System.env("ENV").map(_.getOrElse("test"))
+          config <- ZIO.attempt(ConfigFactory.parseResources(s"application.$env.conf"))
+        yield Runtime.setConfigProvider(TypesafeConfigProvider.fromTypesafeConfig(config))
+      )
+      .flatten >>> Runtime.removeDefaultLoggers >>> SLF4J.slf4j
